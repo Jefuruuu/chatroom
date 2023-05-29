@@ -1,0 +1,38 @@
+// Register
+// 	1. Validate userName
+//   1-1. Return 403 if userName duplicate
+//  2. Hash password
+//  3. Store userName, passwordHash in Database
+//  4. Return 200
+
+// Login (username, password): func -> passwordHasher, unamePasswordValidater, tokenGenerater, insert(?. obj -> User w/ id, name, token
+// 	1. Hash password -> passwordHash
+//  2. Validate userName & passwordHash
+//	 2-1. Return 403 if not match
+//  3. Generate token(id, ext..)
+//  4. Insert token into Database
+//  5. New a User obj with token(not neccessary)
+//  6. Return 200
+
+// Logout
+// Validate token
+//  1. Delete token from Database
+//  2. Return 200
+
+// Send Message (token, message): func -> tokenValidater, delete(?. obj -> Message w/ id, content, timeCreated, userId
+//  1. Validate token
+//	  1-1. Return 403 if token not found
+//    1-2. Delete token & Return to Login if token expire(not neccessary)
+//  2. New Message obj
+//  3. Insert into message table
+//  4. Return 200
+
+// Reply Message (token, meassge, messageReplied): func -> tokenValidater, messageValidater, insert(?. obj -> Message
+// 1. Validate token
+//  1-1. Return 403 if token not found
+//  1-2. Delete token & Return to Login if token expire
+// 2. Validate the existence of message about to reply
+//  2-1. Return 403 if message not found
+// 3. New Message obj with replied property
+// 4. insert into message table
+// 5. Return 200
