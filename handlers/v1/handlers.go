@@ -115,7 +115,7 @@ func LoginHandler(userLoginR users.IUserLoginRepo, tokenR tokens.ITokenRepo) gin
 		if err != nil {
 			println("Login GetPassword")
 			ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-				"ErrMsg": err.Error(),
+				"ErrMsg": customerrors.ErrLoginInfoIncorrect,
 			})
 			return
 		}

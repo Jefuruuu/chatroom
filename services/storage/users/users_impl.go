@@ -28,7 +28,7 @@ func (loginRepo *InMemoryLoginRepo)CheckIfKeyExist(userName string) bool {
 func (loginRepo *InMemoryLoginRepo) Save(userName string, passwordHash []byte) error {
 	loginRepo.MaxKey = loginRepo.MaxKey + 1
 	if loginRepo.CheckIfKeyExist(userName) {
-		return customerrors.ErrKeyDuplicate
+		return customerrors.ErrUserAlreadyExist
 	}
 	loginRepo.Users[userName] = UserLoginData{
 		Id: loginRepo.MaxKey,
@@ -40,7 +40,7 @@ func (loginRepo *InMemoryLoginRepo) Save(userName string, passwordHash []byte) e
 
 func (loginRepo *InMemoryLoginRepo) GetPassword(userName string) (string, error) {
 	if !loginRepo.CheckIfKeyExist(userName) {
-		return "", customerrors.ErrKeyError
+		return "", customerrors.ErrUserNotExist
 	}
 	return loginRepo.Users[userName].Password, nil
 }
