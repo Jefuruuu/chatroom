@@ -1,6 +1,8 @@
 package tokens
 
-import "chatroom/customerrors"
+import (
+	"chatroom/customerrors"
+)
 
 type InMemoryTokenRepo struct {
 	Token map[string]string 

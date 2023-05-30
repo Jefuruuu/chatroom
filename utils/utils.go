@@ -4,7 +4,6 @@ import (
 	"chatroom/constants"
 	"chatroom/services/storage/tokens"
 	"chatroom/services/storage/users"
-	"fmt"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -22,7 +21,6 @@ func GenerateToken(userName string) (*string, error) {
 	})
 	tokenString, err := token.SignedString([]byte(constants.HmacSecretString))
 	if err != nil {
-		fmt.Println("Failed to sign token:", err)
 		return nil, err
 	}
 	return &tokenString, nil
@@ -30,19 +28,10 @@ func GenerateToken(userName string) (*string, error) {
 
 func ValidateToken(tokenR tokens.ITokenRepo, userName string) bool {
 	_, err := tokenR.Get(userName)
-	// return err == nil
-	if err != nil {
-		fmt.Println("Failed to fetch token:", err)
-		return false
-	}
-	return true
+	return err == nil
 }
 
 func CheckUserNameExist(userLoginR users.IUserLoginRepo, userName string) bool {
 	_, err := userLoginR.GetPassword(userName)
-	if err != nil {
-		fmt.Println("Failed to fetch by userName", err)
-		return false
-	}
-	return true
+	return err == nil
 }
