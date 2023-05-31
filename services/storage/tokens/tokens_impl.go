@@ -5,7 +5,7 @@ import (
 )
 
 type InMemoryTokenRepo struct {
-	Token map[string]string 
+	Token map[string]string
 }
 
 func NewTokenRepo() InMemoryTokenRepo {
@@ -14,7 +14,7 @@ func NewTokenRepo() InMemoryTokenRepo {
 	}
 }
 
-func (tokenRepo *InMemoryTokenRepo)CheckIfUserExist(userName string) bool {
+func (tokenRepo *InMemoryTokenRepo) CheckIfUserExist(userName string) bool {
 	_, ok := tokenRepo.Token[userName]
 	return ok
 }
@@ -27,14 +27,14 @@ func (tokenRepo *InMemoryTokenRepo) Save(userName string, token *string) error {
 	return nil
 }
 
-func (tokenRepo *InMemoryTokenRepo)Get(userName string) (string, error) {
+func (tokenRepo *InMemoryTokenRepo) Get(userName string) (string, error) {
 	if !tokenRepo.CheckIfUserExist(userName) {
 		return "", customerrors.ErrUserNotExist
 	}
 	return tokenRepo.Token[userName], nil
 }
 
-func (tokenRepo *InMemoryTokenRepo)Remove(userName string) error {
+func (tokenRepo *InMemoryTokenRepo) Remove(userName string) error {
 	if !tokenRepo.CheckIfUserExist(userName) {
 		return customerrors.ErrUserNotExist
 	}

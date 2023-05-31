@@ -17,7 +17,7 @@ func ComparePassword(passwordInput string, passwordStored string) bool {
 func GenerateToken(userName string) (*string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"name": userName,
-		"iat": time.Now().UTC().Unix(),
+		"iat":  time.Now().UTC().Unix(),
 	})
 	tokenString, err := token.SignedString([]byte(constants.HmacSecretString))
 	if err != nil {

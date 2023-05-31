@@ -3,12 +3,12 @@ package users
 import "chatroom/customerrors"
 
 type InMemoryLoginRepo struct {
-	MaxKey int 
-	Users map[string]UserLoginData
+	MaxKey int
+	Users  map[string]UserLoginData
 }
 
 type UserLoginData struct {
-	Id int
+	Id       int
 	UserName string
 	Password string
 }
@@ -16,11 +16,11 @@ type UserLoginData struct {
 func NewLoginRepo() InMemoryLoginRepo {
 	return InMemoryLoginRepo{
 		MaxKey: -1,
-		Users: map[string]UserLoginData{},
+		Users:  map[string]UserLoginData{},
 	}
 }
 
-func (loginRepo *InMemoryLoginRepo)CheckIfKeyExist(userName string) bool {
+func (loginRepo *InMemoryLoginRepo) CheckIfKeyExist(userName string) bool {
 	_, ok := loginRepo.Users[userName]
 	return ok
 }
@@ -31,7 +31,7 @@ func (loginRepo *InMemoryLoginRepo) Save(userName string, passwordHash []byte) e
 		return customerrors.ErrUserAlreadyExist
 	}
 	loginRepo.Users[userName] = UserLoginData{
-		Id: loginRepo.MaxKey,
+		Id:       loginRepo.MaxKey,
 		UserName: userName,
 		Password: string(passwordHash),
 	}
