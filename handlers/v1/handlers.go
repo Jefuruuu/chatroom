@@ -9,42 +9,32 @@ import (
 	"chatroom/utils"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 )
 
-type UserInfo struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-}
-
 func Authenticate(tokenR tokens.ITokenRepo) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		var userInfo UserInfo
-		if err := ctx.Bind(&userInfo); err != nil {
-			fmt.Println("Authenticate Binding")
-			ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-				"ErrMsg": err.Error(),
-			})
-			return
-		}
-		_, err := tokenR.Get(userInfo.Username) 
+		authHeader := strings.Split(ctx.Request.Header.Get("Authorization"), " ")[1]
+		fmt.Println("authHeader:", authHeader)
+
+		jwtClaims, err := utils.ParseToken(authHeader)
 		if err != nil {
-			fmt.Println("Authenticate CheckToken")
 			ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-				"ErrMsg": err.Error(),
+				"Msg": "Authenticate Failed",
 			})
 			return
 		}
-		ctx.Set("userInfo", userInfo)
+		ctx.Set("username", jwtClaims["name"])
 		ctx.Next()
-	}
+		}
 }
 
 func RegisterHandler(userLoginR users.IUserLoginRepo) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		var registerInfo UserInfo
+		var registerInfo utils.UserInfo
 		if err := ctx.Bind(&registerInfo); err != nil {
 			fmt.Println("Register Binding")
 			ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
@@ -52,20 +42,11 @@ func RegisterHandler(userLoginR users.IUserLoginRepo) gin.HandlerFunc {
 			})
 		}
 
-		// Check username and password null
-		if registerInfo.Username == "" || registerInfo.Password == "" {
-			fmt.Println("Register CheckUserName")
+		// Check register infromation
+		if err := utils.CheckRegisterInfo(registerInfo, userLoginR); err != nil {
+			fmt.Println("Register CheckUserInfo")
 			ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-				"ErrMsg": customerrors.ErrNullUserOrPass.Error(),
-			})
-			return
-		}
-
-		// Check username exist or not
-		if utils.CheckUserNameExist(userLoginR, registerInfo.Username) {
-			fmt.Println("Register UserNameExist")
-			ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-				"ErrMsg": customerrors.ErrUserAlreadyExist.Error(),
+				"ErrMsg": err.Error(),
 			})
 			return
 		}
@@ -90,7 +71,7 @@ func RegisterHandler(userLoginR users.IUserLoginRepo) gin.HandlerFunc {
 
 func LoginHandler(userLoginR users.IUserLoginRepo, tokenR tokens.ITokenRepo) gin.HandlerFunc {
 	return func(ctx *gin.Context){
-		var loginInfo UserInfo
+		var loginInfo utils.UserInfo
 
 		// Binding username & password
 		if err := ctx.Bind(&loginInfo); err != nil {
@@ -101,47 +82,19 @@ func LoginHandler(userLoginR users.IUserLoginRepo, tokenR tokens.ITokenRepo) gin
 			return
 		}
 
-		// Check if username & password null
-		if loginInfo.Username == "" || loginInfo.Password == "" {
-			println("Login CheckUserName")
-			ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-				"ErrMsg": customerrors.ErrNullUserOrPass.Error(),
-			})
-			return
-		}
-
-		// Get password from storage
-		passwordHash, err := userLoginR.GetPassword(loginInfo.Username)
-		if err != nil {
-			println("Login GetPassword")
-			ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-				"ErrMsg": customerrors.ErrLoginInfoIncorrect,
-			})
-			return
-		}
-
-		// Check Password equal or not
-		if !utils.ComparePassword(loginInfo.Password, passwordHash) {
-			println("Login ComparePassword")
-			ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-				"ErrMsg": customerrors.ErrLoginInfoIncorrect.Error(),
-			})
-			return
-		}
-
-		// Generate a token for user
-		token, err := utils.GenerateToken(loginInfo.Username)
-		if err != nil {
-			println("Login GenerateToken")
+		// Validate password
+		if err := utils.ValidPassword(loginInfo, userLoginR); err != nil {
+			println("Login Validate Password")
 			ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 				"ErrMsg": err.Error(),
 			})
 			return
 		}
 
-		// Save token to storage
-		if err := tokenR.Save(loginInfo.Username, token); err != nil {
-			println("Login SaveToken")
+		// Generate and save token
+		token, err := utils.NewTokenToUser(loginInfo, tokenR)
+		if err != nil {
+			println("Login New Token")
 			ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 				"ErrMsg": err.Error(),
 			})
@@ -150,27 +103,17 @@ func LoginHandler(userLoginR users.IUserLoginRepo, tokenR tokens.ITokenRepo) gin
 
 		ctx.JSON(http.StatusOK, gin.H{
 			"Msg": fmt.Sprintf("User %s login successfully!", loginInfo.Username),
+			"Token": *token,
 		})
 	}
 }
 
 func LogoutHandler(tokenR tokens.ITokenRepo) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		println("Logout GetUserInfo")
-		userInfo, _ := ctx.Get("userInfo")
-		username := userInfo.(UserInfo).Username
-
-		// validate token
-		if !utils.ValidateToken(tokenR, username) {
-			println("Logout TokenInvalid")
-			ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-				"ErrMsg": customerrors.ErrTokenNotValid.Error(),
-			})
-			return
-		}
-
+		username, _ := ctx.Get("username")
+		fmt.Println("Logout username:", username)
 		// delete token in tokenR
-		if err := tokenR.Remove(username); err != nil {
+		if err := tokenR.Remove(username.(string)); err != nil {
 			println("Logout RemoveToken")
 			ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 				"ErrMsg": err.Error(),
